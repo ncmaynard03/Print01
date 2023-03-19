@@ -1,0 +1,70 @@
+
+from serial import Serial
+import XInput
+import time
+
+#Joysticks
+
+deadzone = 0.15
+
+#Left stick values
+def get_xl(ctr):
+    value = XInput.get_thumb_values(ctr)[0][0]
+    return value if value > deadzone else 0
+
+def get_yl(ctr):
+    value = XInput.get_thumb_values(ctr)[0][1]
+    return value if value > deadzone else 0
+
+
+#Right stick values
+def get_xr(ctr):
+    value = XInput.get_thumb_values(ctr)[1][0]
+    return value if value > deadzone else 0
+
+def get_yr(ctr):
+    value = XInput.get_thumb_values(ctr)[1][1]
+    return value if value > deadzone else 0
+
+####
+
+
+#Feedrate 
+
+feedrates = [200, 500, 1000, 3000, 6000, 12000]
+fr_index = 4
+
+def increase_feedrate(ctr):
+    fr_index = min(len(feedrates), fr_index + 1)
+    output_line("G0 F" + str(feedrates[fr_index]))
+    
+def decrease_feedrate(ctr):
+    fr_index = max(len(feedrates), fr_index - 1)
+    output_line("G0 F" + str(feedrates[fr_index]))
+
+####
+
+
+#Printer output 
+
+def output_line(line):
+    ser.write(line + "\r\n")
+
+def get_move(ctr):
+    return "G0 X" + str(get_xl(ctr) * 5) + " Y" + str(get_yl(ctr) * 5) + " Z" + str(get_yr(ctr)) + "\r\n"
+
+def get_scalar(ctr):
+    return abs(XInput.get_thumb_values(ctr)[1][0]) * 5      
+
+def main():
+    ser = Serial(port="com4", baudrate = 115200) 
+    time.sleep(2)
+    ser.write("G28\r\nG91\r\nG0 F6000\r\n".encode('utf-8'))
+    time.sleep(1)
+
+    while True:
+        ctr = XInput.get_state(0)
+        ser.write(get_move(ctr).encode('utf-8'))
+        time.sleep(.04)
+
+main()
