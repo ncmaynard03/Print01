@@ -88,7 +88,11 @@ class Printer:
             cmd = "M140"
         self.output_line(cmd + str(temp))
 
-#    def cooldown
+    def cooldown(self):
+        self.set_hotend_temp(0)
+        self.set_bed_temp(0)
+        
+    
 
     def output_line(self, line:str):
         print(line)
