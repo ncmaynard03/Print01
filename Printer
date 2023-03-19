@@ -1,0 +1,96 @@
+from serial import Serial
+import XInput
+import time
+
+feedrates = [200, 500, 1000, 3000, 6000, 12000]
+modes = {1 : "Relative", 2:"Absolute"}
+
+class Printer:
+    def __init__(self, port:str, baudrate:int, x:int = 230, y:int = 230):
+        ## Connection 
+        self.port = port
+        self.baudrate = baudrate
+        self.ser = Serial(port, baudrate)
+        time.sleep(5) # Wait for printer to reset
+        self.output_line("M117 Hello World!") # dDisplay to LCD
+
+        
+        ## Printer specs
+        self.x = x
+        self.y = y
+
+        ## Printer variables
+        self.fr_index = 4
+        self.increase_feedrate()
+        print(feedrates[self.fr_index])
+        
+    def increase_feedrate(self):
+        self.fr_index = min(len(feedrates) - 1, self.fr_index + 1)
+        self.output_line("G0 F" + str(feedrates[self.fr_index]))
+        
+    def decrease_feedrate(self):
+        self.fr_index = max(len(feedrates), 0)
+        self.output_line("G0 F" + str(feedrates[self.fr_index]))
+
+    def home(self, x:bool = True, y:bool = True, z:bool = True):
+        line = "G28"
+        if not (x and y and z):
+            if x:
+                line += " X"
+            if y: 
+                line += " Y"
+            if z:
+                line += " Z"
+        self.output_line(line)
+
+    def home_x(self):
+        self.home(y=False, z=False)
+
+    def home_y(self):
+        self.home(x=False, z=False)
+
+    def home_xy(self):
+        self.home(z = False)
+
+    def home_z(self):
+        self.home(x=False, y=False)
+
+    def set_relative(self):
+        self.output_line("G91")
+        self.relative = True
+
+    def set_absolute(self):
+        self.output_line("G90")
+        self.relative = False
+        
+    def move_to(self, x:int = 0, y:int = 0, z:int = 0):
+        line = "G0"
+        if x != 0:
+            line += " X" + str(x)
+        if y != 0:
+            line += " Y" + str(y) 
+        if z!= 0:
+            line += " Z" + str(z)
+
+        self.output_line(line)
+
+    def set_hotend_temp(self, temp:int, wait:bool = False):
+        if wait: 
+            cmd = "M109"
+        else:
+            cmd = "M104"
+        self.output_line(cmd + str(temp))
+
+    def set_bed_temp(self, temp:int, wait:bool = False):
+        if wait:
+            cmd = "M190"
+        else:
+            cmd = "M140"
+        self.output_line(cmd + str(temp))
+
+#    def cooldown
+
+    def output_line(self, line:str):
+        print(line)
+        line += "\r\n"
+        self.ser.write(line.encode())
